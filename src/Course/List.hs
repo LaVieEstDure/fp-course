@@ -71,12 +71,12 @@ foldLeft f b (h :. t) = let b' = f b h in b' `seq` foldLeft f b' t
 -- prop> \x -> x `headOr` infinity == 0
 --
 -- prop> \x -> x `headOr` Nil == x
-headOr ::
+headOr :: 
   a
   -> List a
   -> a
-headOr =
-  error "todo: Course.List#headOr"
+headOr a Nil = a
+headOr _ (b:._) = b
 
 -- | The product of the elements of a list.
 --
@@ -92,7 +92,7 @@ product ::
   List Int
   -> Int
 product =
-  error "todo: Course.List#product"
+  foldLeft (\x y -> y * x) 1
 
 -- | Sum the elements of the list.
 --
@@ -106,8 +106,7 @@ product =
 sum ::
   List Int
   -> Int
-sum =
-  error "todo: Course.List#sum"
+sum = foldLeft (\x y -> x + y) 0
 
 -- | Return the length of the list.
 --
@@ -118,8 +117,8 @@ sum =
 length ::
   List a
   -> Int
-length =
-  error "todo: Course.List#length"
+length = foldLeft (\x _ ->  x + 1) 0
+
 
 -- | Map the given function on each element of the list.
 --
@@ -133,8 +132,7 @@ map ::
   (a -> b)
   -> List a
   -> List b
-map =
-  error "todo: Course.List#map"
+map f = foldRight (\x y -> f x :. y) Nil
 
 -- | Return elements satisfying the given predicate.
 --
@@ -150,8 +148,7 @@ filter ::
   (a -> Bool)
   -> List a
   -> List a
-filter =
-  error "todo: Course.List#filter"
+filter f = foldRight (\x y -> if f x then x:.y else y) Nil
 
 -- | Append two lists to a new list.
 --
@@ -169,8 +166,7 @@ filter =
   List a
   -> List a
   -> List a
-(++) =
-  error "todo: Course.List#(++)"
+(++) a b = foldRight (\x y -> x :. y) b a
 
 infixr 5 ++
 
@@ -187,8 +183,7 @@ infixr 5 ++
 flatten ::
   List (List a)
   -> List a
-flatten =
-  error "todo: Course.List#flatten"
+flatten = foldRight (\x ac -> x ++ ac) Nil 
 
 -- | Map a function then flatten to a list.
 --
@@ -204,8 +199,7 @@ flatMap ::
   (a -> List b)
   -> List a
   -> List b
-flatMap =
-  error "todo: Course.List#flatMap"
+flatMap f l = flatten (map f l)
 
 -- | Flatten a list of lists to a list (again).
 -- HOWEVER, this time use the /flatMap/ function that you just wrote.
@@ -214,8 +208,7 @@ flatMap =
 flattenAgain ::
   List (List a)
   -> List a
-flattenAgain =
-  error "todo: Course.List#flattenAgain"
+flattenAgain = flatMap id
 
 -- | Convert a list of optional values to an optional list of values.
 --
@@ -242,8 +235,18 @@ flattenAgain =
 seqOptional ::
   List (Optional a)
   -> Optional (List a)
-seqOptional =
-  error "todo: Course.List#seqOptional"
+
+-- seqOptional = foldRight (\x ac -> if x == Empty then Empty else 
+--                          case ac of 
+--                           )) Nil
+
+seqOptional = foldRight (\x ac -> 
+                        case x of 
+                          Empty -> Empty
+                          Full d -> case ac of 
+                            Empty -> Empty
+                            Full c -> Full (d:.c))
+                        (Full Nil)
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -265,9 +268,9 @@ find ::
   (a -> Bool)
   -> List a
   -> Optional a
-find =
-  error "todo: Course.List#find"
-
+find f li = (case li of 
+              Nil -> Empty
+              x:.xs -> if f x then Full x else find f xs)
 -- | Determine if the length of the given list is greater than 4.
 --
 -- >>> lengthGT4 (1 :. 3 :. 5 :. Nil)
@@ -281,11 +284,31 @@ find =
 --
 -- >>> lengthGT4 infinity
 -- True
+
+-- Written by Tony Morris
+-- Word from God himself
+-- Do not touch 
+
+data U = U
+lengthf :: List a -> List U
+lengthf Nil = Nil
+lengthf (_:.t) = U :. lengthf t
+-- lengthf = map (\_ -> U)
+
+gt :: List U -> List U -> Bool
+gt Nil _ = False
+gt (_:._) Nil = True
+gt (_:.t1) (_:.t2) = t1 `gt` t2
+
+four :: List U
+four = U :. U :. U :. U :. Nil
+
 lengthGT4 ::
   List a
   -> Bool
-lengthGT4 =
-  error "todo: Course.List#lengthGT4"
+lengthGT4 x = 
+  lengthf x `gt` four
+
 
 -- | Reverse a list.
 --
@@ -301,8 +324,7 @@ lengthGT4 =
 reverse ::
   List a
   -> List a
-reverse =
-  error "todo: Course.List#reverse"
+reverse = foldLeft (\acc x -> x :. acc) Nil
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
 -- then runs the given function for subsequent elements
